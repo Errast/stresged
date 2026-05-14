@@ -1,0 +1,4 @@
+(executable
+ (public_name stresged)
+ (name main)
+ (libraries stresged))
