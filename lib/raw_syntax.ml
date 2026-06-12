@@ -16,6 +16,16 @@ let universe_join =
   | _, _ ->
       Type
 
+let universe_leq lhs rhs =
+  match (lhs, rhs) with
+  | RuntimeType, (RuntimeType | Kind | Sig)
+  | Type, (Type | Kind | Sig)
+  | Kind, (Kind | Sig)
+  | Sig, Sig ->
+      true
+  | _ ->
+      false
+
 type mode = Dynamic | Static [@@deriving sexp, eq]
 
 type neg_modality = [`Lower] [@@deriving eq, sexp]

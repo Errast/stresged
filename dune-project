@@ -4,6 +4,12 @@
 
 (package
  (name stresged)
- (depends ocaml sexplib ppx_sexp_conv ppx_deriving ppx_expect))
+ (depends
+  ocaml
+  sexplib
+  ppx_sexp_conv
+  ppx_deriving
+  ppx_expect
+  ppx_sexp_message))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

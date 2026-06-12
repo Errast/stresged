@@ -11,6 +11,10 @@ let rec parse_term : sexp -> Raw_syntax.term = function
       Universe Type
   | Atom "RuntimeType" ->
       Universe RuntimeType
+  | Atom "Sig" ->
+      Universe Sig
+  | Atom "Kind" ->
+      Universe Kind
   | Atom var ->
       Var var
   | List sexps ->
@@ -26,7 +30,9 @@ and[@warning "-8"] parse_list : sexp list -> Raw_syntax.term = function
   | Atom "snd" :: tm ->
       Snd (parse_list tm)
   | Atom "\\" :: Atom var :: Atom "->" :: body ->
-      Lambda (var, parse_list body)
+      Lambda (var, None, parse_list body)
+  | Atom "\\" :: List (Atom var :: Atom ":" :: arg_ty) :: Atom "->" :: body ->
+      Lambda (var, Some (parse_list arg_ty), parse_list body)
   | Atom "lift" :: typ ->
       ModalBoxTy (`Lower, parse_list typ)
   | Atom "quote" :: term ->
@@ -44,19 +50,20 @@ and[@warning "-8"] parse_list : sexp list -> Raw_syntax.term = function
               Arrow (parse_term typ, rhs_typ) )
         (parse_term ret_typ) arg_typs
   | Atom "sigma" :: (_ :: _ :: _ as typs) ->
-      let (ret_typ :: arg_typs) = List.rev typs in
+      let (last_typ :: typs) = List.rev typs in
       List.fold_left
-        (fun rhs_typ (lhs_typ : sexp) : Raw_syntax.term ->
-          match lhs_typ with
+        (fun snd_typ (fst_typ : sexp) : Raw_syntax.term ->
+          match fst_typ with
           | List (Atom id :: Atom ":" :: typ) ->
-              Sigma (id, parse_list typ, rhs_typ)
+              Sigma (id, parse_list typ, snd_typ)
           | typ ->
-              Pair (parse_term typ, rhs_typ) )
-        (parse_term ret_typ) arg_typs
-  | Atom "pair" :: fst :: (_ :: _ as rest) ->
+              Prod (parse_term typ, snd_typ) )
+        (parse_term last_typ) typs
+  | Atom "pair" :: (_ :: _ :: _ as terms) ->
+      let (last_term :: terms) = List.rev terms in
       List.fold_left
-        (fun acc snd_sexp -> Raw_syntax.Pair (acc, parse_term snd_sexp))
-        (parse_term fst) rest
+        (fun snd_tm fst_tm -> Raw_syntax.Pair (parse_term fst_tm, snd_tm))
+        (parse_term last_term) terms
   | Atom "let" :: List bindings :: body ->
       List.fold_right
         (fun (List [Atom lhs; rhs] : sexp) body ->
